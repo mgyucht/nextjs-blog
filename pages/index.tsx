@@ -2,7 +2,6 @@ import Head from "next/head";
 import Link from "next/link";
 import Layout, { siteTitle } from "../components/layout";
 import Date from "../components/date";
-import utilStyles from "../styles/utils.module.css";
 import { getSortedPostsData } from "../lib/posts";
 import { GetStaticProps } from "next";
 
@@ -29,7 +28,7 @@ export default function Home({
       <Head>
         <title>{siteTitle}</title>
       </Head>
-      <section className={utilStyles.headingMd}>
+      <section className="prose">
         <p>
           I'm Miles Yucht, a staff software engineer and engineering manager at
           Databricks. I've been working at Databricks since 2015; before then, I
@@ -71,16 +70,16 @@ export default function Home({
           in the form of the billing and audit logging pipelines.
         </p>
       </section>
-      <section className={`${utilStyles.headingMd} ${utilStyles.padding1px}`}>
-        <h2 className={utilStyles.headingLg}>Blog</h2>
-        <ul className={utilStyles.list}>
+      <section className="text-base pt-12">
+        <h2 className="text-3xl font-bold pb-4">Blog</h2>
+        <ul className="list-none">
           {allPostsData.map(({ id, date, title }) => (
-            <li className={utilStyles.listItem} key={id}>
+            <li className="pb-4" key={id}>
               <Link href={`/posts/${id}`}>
-                <a>{title}</a>
+                <a className="text-xl hover:underline text-sky-500">{title}</a>
               </Link>
               <br />
-              <small className={utilStyles.lightText}>
+              <small className="text-slate-500">
                 <Date dateString={date} />
               </small>
             </li>
