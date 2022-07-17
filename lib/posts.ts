@@ -4,13 +4,30 @@ import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
 
-const postsDirectory = path.join(process.cwd(), "posts");
+function getPath(relativePath: string): string {
+  return path.join(process.cwd(), relativePath);
+}
+
+const POSTS_DIRECTORY = getPath("markdown/posts");
+const ABOUT_ME_PAGE = getPath("markdown/about-me.md");
+
+export async function getAboutMePage() {
+  const fileContents = fs.readFileSync(ABOUT_ME_PAGE, "utf8");
+  const matterResult = matter(fileContents);
+  const processedContent = await remark()
+    .use(html)
+    .process(matterResult.content);
+  const contentHtml = processedContent.toString();
+  return {
+    contentHtml,
+  };
+}
 
 export function getSortedPostsData() {
-  const fileNames = fs.readdirSync(postsDirectory);
+  const fileNames = fs.readdirSync(POSTS_DIRECTORY);
   const allPostsData = fileNames.map((fileName) => {
     const id = fileName.replace(/\.md$/, "");
-    const fullPath = path.join(postsDirectory, fileName);
+    const fullPath = path.join(POSTS_DIRECTORY, fileName);
     const fileContents = fs.readFileSync(fullPath, "utf8");
     const matterResult = matter(fileContents);
     return {
@@ -31,7 +48,7 @@ export function getSortedPostsData() {
 }
 
 export function getAllPostIds() {
-  const fileNames = fs.readdirSync(postsDirectory);
+  const fileNames = fs.readdirSync(POSTS_DIRECTORY);
   return fileNames.map((fileName) => {
     return {
       params: {
@@ -42,7 +59,7 @@ export function getAllPostIds() {
 }
 
 export async function getPostData(id: string) {
-  const fullPath = path.join(postsDirectory, `${id}.md`);
+  const fullPath = path.join(POSTS_DIRECTORY, `${id}.md`);
   const fileContents = fs.readFileSync(fullPath, "utf8");
   const matterResult = matter(fileContents);
   const processedContent = await remark()
