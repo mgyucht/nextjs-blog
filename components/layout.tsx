@@ -1,20 +1,58 @@
+import classNames from "classnames";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import React from "react";
 
 const name = "Miles Yucht";
 export const siteTitle = "Miles Yucht - Staff Software Engineer & Manager";
 
-export default function Layout({
-  children,
-  home,
-}: {
-  children: React.ReactNode;
-  home?: boolean;
-}) {
+type NavBarEntry = {
+  title: string;
+  link: string;
+};
+
+const NAV_BAR_ENTRIES: NavBarEntry[] = [
+  { title: "Home", link: "/" },
+  { title: "About", link: "/about-me" },
+  { title: "Blog", link: "/blog" },
+];
+
+function isOnPage(currentPath: string, link: string): boolean {
+  if (link === "/") {
+    return currentPath === link;
+  }
+  return currentPath.startsWith(link);
+}
+
+function getNavBar(currentPath: string) {
+  const elements = NAV_BAR_ENTRIES.map(({ title, link }) => {
+    const isCurrentPath = isOnPage(currentPath, link);
+    const className = classNames("mx-2", "font-light", {
+      underline: isCurrentPath,
+      "underline-offset-4": isCurrentPath,
+    });
+    return (
+      <li className={className} key={link}>
+        <Link href={link}>
+          <a>{title}</a>
+        </Link>
+      </li>
+    );
+  });
   return (
-    <div className="max-w-prose mx-auto mt-14 mb-3">
+    <nav className="flex flex-col items-center mb-12">
+      <ul className="flex">{elements}</ul>
+    </nav>
+  );
+}
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const currentPath = router.pathname;
+  return (
+    <div className="max-w-prose mx-auto mt-14 mb-3 font-sans">
       <Head>
         <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
         <meta
@@ -31,48 +69,28 @@ export default function Layout({
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <header className="flex flex-col items-center">
-        {home ? (
-          <>
-            <Image
-              priority
-              src="/images/profile-photo.jpeg"
-              className="rounded-full"
-              height={144}
-              width={144}
-              alt={name}
-            />
-            <h1 className="text-5xl font-extrabold mt-4 mb-12">{name}</h1>
-          </>
-        ) : (
-          <>
-            <Link href="/">
-              <a>
-                <Image
-                  priority
-                  src="/images/profile-photo.jpeg"
-                  className="rounded-full"
-                  height={108}
-                  width={108}
-                  alt={name}
-                />
-              </a>
-            </Link>
-            <h2 className="text-2xl font-bold my-4">
-              <Link href="/">
-                <a>{name}</a>
-              </Link>
-            </h2>
-          </>
-        )}
-      </header>
-      <main>{children}</main>
-      {!home && (
-        <div className="mt-12">
+        <>
           <Link href="/">
-            <a className="hover:underline text-sky-500">← Back to home</a>
+            <a>
+              <Image
+                priority
+                src="/images/profile-photo.jpeg"
+                className="rounded-full"
+                height={108}
+                width={108}
+                alt={name}
+              />
+            </a>
           </Link>
-        </div>
-      )}
+          <h2 className="text-2xl font-bold my-4">
+            <Link href="/">
+              <a>{name}</a>
+            </Link>
+          </h2>
+        </>
+      </header>
+      {getNavBar(currentPath)}
+      <main>{children}</main>
     </div>
   );
 }
