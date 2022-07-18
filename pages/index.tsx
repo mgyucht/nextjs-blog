@@ -5,54 +5,18 @@ import Date from "../components/date";
 import { getSortedPostsData, getAboutMePage } from "../lib/posts";
 import { GetStaticProps } from "next";
 
-export const getStaticProps: GetStaticProps = async () => {
-  const allPostsData = getSortedPostsData();
-  const aboutMePage = await getAboutMePage();
-  return {
-    props: {
-      allPostsData,
-      aboutMePage,
-    },
-  };
-};
-
-export default function Home({
-  allPostsData,
-  aboutMePage,
-}: {
-  allPostsData: {
-    date: string;
-    title: string;
-    id: string;
-  }[];
-  aboutMePage: {
-    contentHtml: string;
-  };
-}) {
+export default function Home() {
   return (
-    <Layout home>
+    <Layout>
       <Head>
         <title>{siteTitle}</title>
       </Head>
-      <section
-        className="prose"
-        dangerouslySetInnerHTML={{ __html: aboutMePage.contentHtml }}
-      ></section>
-      <section className="text-base pt-12">
-        <h2 className="text-3xl font-bold pb-4">Blog</h2>
-        <ul className="list-none">
-          {allPostsData.map(({ id, date, title }) => (
-            <li className="pb-4" key={id}>
-              <Link href={`/posts/${id}`}>
-                <a className="text-xl hover:underline text-sky-500">{title}</a>
-              </Link>
-              <br />
-              <small className="text-slate-500">
-                <Date dateString={date} />
-              </small>
-            </li>
-          ))}
-        </ul>
+
+      <section className="prose">
+        Welcome to my corner of the internet. Every so often, I get obsessed
+        with something and spend a month or two thinking deeply about it. This
+        time, it was making a website. Take a look at my blog to find out about
+        what I am currently sinking my teeth into.
       </section>
     </Layout>
   );
