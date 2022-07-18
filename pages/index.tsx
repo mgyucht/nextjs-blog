@@ -12,8 +12,11 @@ export default function Home() {
         <title>{siteTitle}</title>
       </Head>
 
-      <section className="text-base">
-        Welcome to my corner of the internet.
+      <section className="prose">
+        Welcome to my corner of the internet. Every so often, I get obsessed
+        with something and spend a month or two thinking deeply about it. This
+        time, it was making a website. Take a look at my blog to find out about
+        what I am currently sinking my teeth into.
       </section>
     </Layout>
   );
