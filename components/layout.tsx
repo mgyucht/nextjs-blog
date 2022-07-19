@@ -73,11 +73,13 @@ function getFooter() {
       <div className="py-2">
         {FOOTER_ENTRIES.map(({ brand, link }) => {
           return (
-            <Link href={link} key={link}>
-              <a>
-                <FontAwesomeIcon icon={brand} size="2x" className="px-2" />
-              </a>
-            </Link>
+            <a href={link} target="_blank">
+              <FontAwesomeIcon
+                icon={brand}
+                size="2x"
+                className="px-2 transition-colors hover:text-sky-500"
+              />
+            </a>
           );
         })}
       </div>
