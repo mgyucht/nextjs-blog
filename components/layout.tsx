@@ -73,7 +73,7 @@ function getFooter() {
       <div className="py-2">
         {FOOTER_ENTRIES.map(({ brand, link }) => {
           return (
-            <a href={link} target="_blank">
+            <a href={link} target="_blank" rel="noreferrer" key={link}>
               <FontAwesomeIcon
                 icon={brand}
                 size="2x"
