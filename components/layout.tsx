@@ -4,6 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import {
+  faGithub,
+  faLinkedin,
+  faTwitter,
+} from "@fortawesome/free-brands-svg-icons";
 
 const name = "Miles Yucht";
 export const siteTitle = "Miles Yucht - Staff Software Engineer & Manager";
@@ -48,6 +55,39 @@ function getNavBar(currentPath: string) {
   );
 }
 
+type FooterEntry = {
+  brand: IconDefinition;
+  link: string;
+};
+
+const FOOTER_ENTRIES: FooterEntry[] = [
+  { brand: faTwitter, link: "https://twitter.com/MilesYucht" },
+  { brand: faGithub, link: "https://github.com/mgyucht" },
+  { brand: faLinkedin, link: "https://www.linkedin.com/in/milesyucht/" },
+];
+
+function getFooter() {
+  const currentYear = new Date().getFullYear();
+  return (
+    <footer className="flex flex-col items-center">
+      <div className="py-2">
+        {FOOTER_ENTRIES.map(({ brand, link }) => {
+          return (
+            <Link href={link} key={link}>
+              <a>
+                <FontAwesomeIcon icon={brand} size="2x" className="px-2" />
+              </a>
+            </Link>
+          );
+        })}
+      </div>
+      <div className="text-xs py-2">
+        &copy; {currentYear} Miles Yucht. All Rights Reserved
+      </div>
+    </footer>
+  );
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const currentPath = router.pathname;
@@ -82,7 +122,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               />
             </a>
           </Link>
-          <h2 className="text-2xl font-bold my-4">
+          <h2 className="text-2xl font-semibold my-4">
             <Link href="/">
               <a>{name}</a>
             </Link>
@@ -90,7 +130,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </>
       </header>
       {getNavBar(currentPath)}
-      <main>{children}</main>
+      <main className="pb-8">{children}</main>
+      {getFooter()}
     </div>
   );
 }
