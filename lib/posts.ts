@@ -11,6 +11,10 @@ function getPath(relativePath: string): string {
 const POSTS_DIRECTORY = getPath("markdown/posts");
 const ABOUT_ME_PAGE = getPath("markdown/about-me.md");
 
+function arePreviewPostsAllowed() {
+  return process.env.BLOG_ALLOW_PREVIEW === "true";
+}
+
 export async function getAboutMePage() {
   const fileContents = fs.readFileSync(ABOUT_ME_PAGE, "utf8");
   const matterResult = matter(fileContents);
@@ -23,18 +27,34 @@ export async function getAboutMePage() {
   };
 }
 
+type PostHeader = {
+  date: string;
+  title: string;
+  preview: boolean;
+};
+
+function parseHeader(data: any): PostHeader {
+  return {
+    date: data.date,
+    title: data.title,
+    preview: data.preview === "true",
+  };
+}
+
 export function getSortedPostsData() {
   const fileNames = fs.readdirSync(POSTS_DIRECTORY);
-  const allPostsData = fileNames.map((fileName) => {
-    const id = fileName.replace(/\.md$/, "");
-    const fullPath = path.join(POSTS_DIRECTORY, fileName);
-    const fileContents = fs.readFileSync(fullPath, "utf8");
-    const matterResult = matter(fileContents);
-    return {
-      id,
-      ...(matterResult.data as { date: string; title: string }),
-    };
-  });
+  const allPostsData = fileNames
+    .map((fileName) => {
+      const id = fileName.replace(/\.md$/, "");
+      const fullPath = path.join(POSTS_DIRECTORY, fileName);
+      const fileContents = fs.readFileSync(fullPath, "utf8");
+      const matterResult = matter(fileContents);
+      return {
+        id,
+        ...parseHeader(matterResult.data),
+      };
+    })
+    .filter(({ preview }) => arePreviewPostsAllowed() || !preview);
 
   return allPostsData.sort(({ date: a }, { date: b }) => {
     if (a < b) {
@@ -48,13 +68,10 @@ export function getSortedPostsData() {
 }
 
 export function getAllPostIds() {
-  const fileNames = fs.readdirSync(POSTS_DIRECTORY);
-  return fileNames.map((fileName) => {
-    return {
-      params: {
-        id: fileName.replace(/\.md$/, ""),
-      },
-    };
+  return getSortedPostsData().map(({ id }) => {
+    params: {
+      id;
+    }
   });
 }
 
@@ -69,6 +86,6 @@ export async function getPostData(id: string) {
   return {
     id,
     contentHtml,
-    ...(matterResult.data as { date: string; title: string }),
+    ...parseHeader(matterResult.data),
   };
 }
