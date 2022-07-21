@@ -15,6 +15,30 @@ import {
 const name = "Miles Yucht";
 export const siteTitle = "Miles Yucht - Staff Software Engineer & Manager";
 
+function getHeader() {
+  return (
+    <header className="flex flex-col items-center">
+      <Link href="/">
+        <a>
+          <Image
+            priority
+            src="/images/profile-photo.jpeg"
+            className="rounded-full"
+            height={108}
+            width={108}
+            alt={name}
+          />
+        </a>
+      </Link>
+      <h2 className="text-2xl font-semibold my-4">
+        <Link href="/">
+          <a>{name}</a>
+        </Link>
+      </h2>
+    </header>
+  );
+}
+
 type NavBarEntry = {
   title: string;
   link: string;
@@ -36,10 +60,23 @@ function isOnPage(currentPath: string, link: string): boolean {
 function getNavBar(currentPath: string) {
   const elements = NAV_BAR_ENTRIES.map(({ title, link }) => {
     const isCurrentPath = isOnPage(currentPath, link);
-    const className = classNames("mx-2", "font-light", {
-      underline: isCurrentPath,
-      "underline-offset-4": isCurrentPath,
-    });
+    const className = classNames(
+      "mx-2",
+      "font-light",
+      {
+        underline: isCurrentPath,
+        "underline-offset-4": isCurrentPath,
+      },
+      "after:bg-black",
+      "after:w-full",
+      "after:h-px",
+      "after:block",
+      "after:absolute",
+      "after:scale-x-0",
+      { "after:hover:scale-x-100": !isCurrentPath },
+      "after:transition-transform",
+      "relative"
+    );
     return (
       <li className={className} key={link}>
         <Link href={link}>
@@ -110,27 +147,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <meta name="og:title" content={siteTitle} />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
-      <header className="flex flex-col items-center">
-        <>
-          <Link href="/">
-            <a>
-              <Image
-                priority
-                src="/images/profile-photo.jpeg"
-                className="rounded-full"
-                height={108}
-                width={108}
-                alt={name}
-              />
-            </a>
-          </Link>
-          <h2 className="text-2xl font-semibold my-4">
-            <Link href="/">
-              <a>{name}</a>
-            </Link>
-          </h2>
-        </>
-      </header>
+      {getHeader()}
       {getNavBar(currentPath)}
       <main className="pb-8">{children}</main>
       {getFooter()}
