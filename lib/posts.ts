@@ -69,9 +69,11 @@ export function getSortedPostsData() {
 
 export function getAllPostIds() {
   return getSortedPostsData().map(({ id }) => {
-    params: {
-      id;
-    }
+    return {
+      params: {
+        id,
+      },
+    };
   });
 }
 
