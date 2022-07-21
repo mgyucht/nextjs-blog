@@ -13,10 +13,16 @@ export default function Home() {
       </Head>
 
       <section className="prose">
-        Welcome to my corner of the internet. Every so often, I get obsessed
-        with something and spend a month or two thinking deeply about it. This
-        time, it was making a website. Take a look at my blog to find out about
-        what I am currently sinking my teeth into.
+        <p>
+          Welcome to my corner of the internet. Every so often, I get obsessed
+          with something and spend a month or two thinking deeply about it. This
+          time, it was making a website. Take a look at my blog to find out
+          about what I am currently sinking my teeth into.
+        </p>
+        <p>
+          You can reach out to me at{" "}
+          <a href="mailto:miles@yucht.me">miles@yucht.me</a>.
+        </p>
       </section>
     </Layout>
   );
