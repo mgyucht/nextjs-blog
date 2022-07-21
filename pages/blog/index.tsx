@@ -4,6 +4,8 @@ import Layout, { siteTitle } from "../../components/layout";
 import Date from "../../components/date";
 import { getSortedPostsData, getAboutMePage } from "../../lib/posts";
 import { GetStaticProps } from "next";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 
 export const getStaticProps: GetStaticProps = async () => {
   const allPostsData = getSortedPostsData();
@@ -21,6 +23,7 @@ export default function Home({
     date: string;
     title: string;
     id: string;
+    preview: boolean;
   }[];
 }) {
   return (
@@ -30,8 +33,9 @@ export default function Home({
       </Head>
       <section className="text-base">
         <ul className="list-none">
-          {allPostsData.map(({ id, date, title }) => (
+          {allPostsData.map(({ id, date, title, preview }) => (
             <li className="pb-4" key={id}>
+              {preview && <><FontAwesomeIcon icon={faTriangleExclamation} />{" "}</>}
               <Link href={`/blog/${id}`}>
                 <a className="text-xl hover:underline text-sky-500">{title}</a>
               </Link>
