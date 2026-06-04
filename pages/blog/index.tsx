@@ -36,9 +36,7 @@ export default function Home({
           {allPostsData.map(({ id, date, title, preview }) => (
             <li className="pb-4" key={id}>
               {preview && <><FontAwesomeIcon icon={faTriangleExclamation} />{" "}</>}
-              <Link href={`/blog/${id}`}>
-                <a className="text-xl hover:underline text-sky-500">{title}</a>
-              </Link>
+              <Link href={`/blog/${id}`} className="text-xl hover:underline text-sky-500">{title}</Link>
               <br />
               <small className="text-slate-500">
                 <Date dateString={date} />

@@ -1,7 +1,7 @@
 ---
-title: "Short Summary of Simple Dutch Verbs with Prefixes"
-date: "2022-07-22"
+title: "Starting my blog"
+date: "2026-06-04"
 preview: "true"
 ---
 
-Test 123
+Just a first post to get my blog kicked off.

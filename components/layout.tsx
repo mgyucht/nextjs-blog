@@ -19,21 +19,17 @@ function getHeader() {
   return (
     <header className="flex flex-col items-center">
       <Link href="/">
-        <a>
-          <Image
-            priority
-            src="/images/profile-photo.jpeg"
-            className="rounded-full"
-            height={108}
-            width={108}
-            alt={name}
-          />
-        </a>
+        <Image
+          priority
+          src="/images/profile-photo.jpeg"
+          className="rounded-full"
+          height={108}
+          width={108}
+          alt={name}
+        />
       </Link>
       <h2 className="text-2xl font-semibold my-4">
-        <Link href="/">
-          <a>{name}</a>
-        </Link>
+        <Link href="/">{name}</Link>
       </h2>
     </header>
   );
@@ -79,9 +75,7 @@ function getNavBar(currentPath: string) {
     );
     return (
       <li className={className} key={link}>
-        <Link href={link}>
-          <a>{title}</a>
-        </Link>
+        <Link href={link}>{title}</Link>
       </li>
     );
   });
