@@ -3,12 +3,13 @@ import Link from "next/link";
 import Layout, { siteTitle } from "../../components/layout";
 import Date from "../../components/date";
 import { getSortedPostsData, getAboutMePage } from "../../lib/posts";
-import { GetStaticProps } from "next";
+import { GetServerSideProps } from "next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 
-export const getStaticProps: GetStaticProps = async () => {
-  const allPostsData = getSortedPostsData();
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+  const allowPreview = query.preview === "true";
+  const allPostsData = getSortedPostsData(allowPreview);
   return {
     props: {
       allPostsData,

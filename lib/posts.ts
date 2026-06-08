@@ -3,6 +3,7 @@ import path from "path";
 import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
+import remarkGfm from "remark-gfm";
 
 function getPath(relativePath: string): string {
   return path.join(process.cwd(), relativePath);
@@ -11,14 +12,11 @@ function getPath(relativePath: string): string {
 const POSTS_DIRECTORY = getPath("markdown/posts");
 const ABOUT_ME_PAGE = getPath("markdown/about-me.md");
 
-function arePreviewPostsAllowed() {
-  return process.env.BLOG_ALLOW_PREVIEW === "true";
-}
-
 export async function getAboutMePage() {
   const fileContents = fs.readFileSync(ABOUT_ME_PAGE, "utf8");
   const matterResult = matter(fileContents);
   const processedContent = await remark()
+    .use(remarkGfm)
     .use(html)
     .process(matterResult.content);
   const contentHtml = processedContent.toString();
@@ -41,7 +39,7 @@ function parseHeader(data: any): PostHeader {
   };
 }
 
-export function getSortedPostsData() {
+export function getSortedPostsData(allowPreview = false) {
   const fileNames = fs.readdirSync(POSTS_DIRECTORY);
   const allPostsData = fileNames
     .map((fileName) => {
@@ -54,7 +52,7 @@ export function getSortedPostsData() {
         ...parseHeader(matterResult.data),
       };
     })
-    .filter(({ preview }) => arePreviewPostsAllowed() || !preview);
+    .filter(({ preview }) => allowPreview || !preview);
 
   return allPostsData.sort(({ date: a }, { date: b }) => {
     if (a < b) {
@@ -68,7 +66,7 @@ export function getSortedPostsData() {
 }
 
 export function getAllPostIds() {
-  return getSortedPostsData().map(({ id }) => {
+  return getSortedPostsData(true).map(({ id }) => {
     return {
       params: {
         id,
@@ -82,6 +80,7 @@ export async function getPostData(id: string) {
   const fileContents = fs.readFileSync(fullPath, "utf8");
   const matterResult = matter(fileContents);
   const processedContent = await remark()
+    .use(remarkGfm)
     .use(html)
     .process(matterResult.content);
   const contentHtml = processedContent.toString();
