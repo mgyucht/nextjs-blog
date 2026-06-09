@@ -6,23 +6,22 @@ preview: "true"
 
 Over the last several years, Van Moof did to electric bikes what Tesla did to electric cars. With their sleek design with integrated battery and kicklock, Van Moof elevated electric bikes to a new level by creating a bike was functional, fast, and easy to ride. Their S3 and X3 models were two of the most high-tech commercial electric bikes at the time they were produced in 2020.
 
-The whole electromechanical system comprises many modules, including the electric motor, e-shifter, kick lock, battery and pedal sensor, all of which are driven by the smart cartridge. In particular, the e-shifter is one of the most notorious components of the bike. Many Van Moof owners were (and probably still are) haunted by the `ERR 44` displayed when the smart cartridge is unable to communicate with the e-shifter, a fate to which my e-shifter also fell victim. There are many electrical and mechanical failure modes that prevent the e-shifter from doing its job of controlling the Sturmey-Archer geartrain and shift gears on command. With a broken e-shifter in hand, I examined the e-shifter, curious to work out how it functions and how it interacts with the smart cartridge, with the ultimate goal to repair my own non-working e-shifter and maybe learning something about reverse engineering.
+The whole electromechanical system of these bikes comprises many modules, including the electric motor, e-shifter, kick lock, battery and pedal sensor, all of which are connected to a central hub called the smart cartridge. Of all these components, the e-shifter is one of the most notorious of the bike. Many Van Moof owners were (and probably still are) haunted by the `ERR 44` displayed when the smart cartridge is unable to communicate with the e-shifter, a fate to which my e-shifter also fell victim. Other times, the gear shift indicator on the display will move back and forth, but the e-shifter does not actually change the gear that the bike is in. There are many electrical and mechanical failure modes that prevent the e-shifter from doing its job of controlling the Sturmey-Archer geartrain and shift gears on command. With a broken e-shifter in hand, I examined the e-shifter, curious to work out how it functions and how it interacts with the smart cartridge, with the ultimate goal to repair my own non-working e-shifter and maybe learning something about reverse engineering.
 
-As a warning to the reader: I'm not an electrical engineer, nor do I have any experience with reverse engineering, so keep that in mind as you read through this post. This is not a guide on how to reverse engineer a component as much as it is a retelling of my experience going through this process.
+As a warning to the reader: I'm not an electrical engineer, nor do I have any experience with reverse engineering, so keep that in mind as you read through this post. This is not a guide on how to reverse engineer a component as much as it is a retelling of my experience and a description of what I found going through this process.
 
 # Part 1: Electrical investigation
 
-To start on the project, I disassembled my (non-working) e-shifter and examined its inner workings. The e-shifter consists of a circuit board with several ICs, including a microcontroller, two Hall effect sensors to detect the position of the shifting ring, a motor and motor driver, and various gears to connect the motor to the shifting ring itself. To shift, the smart cartridge communicates via UART with the microcontroller, instructing it to change to the requested gear.
+To start on the project, I disassembled my e-shifter and examined its inner workings. The e-shifter consists of a circuit board with several ICs, including a microcontroller, two Hall effect sensors to detect the position of the shifting ring, a motor and motor driver, and various gears to connect the motor to the shifting ring itself. To shift, the smart cartridge communicates via UART with the microcontroller, instructing it to change to the requested gear. The microcontroller then activates the motor in the appropriate direction, rotating the geartrain, which ultimately rotates a gear in the hub itself, changing the gear of the bike.
 
 (image: front)
 
 (image: back)
 
-My first goal was to create an accurate circuit diagram of the PCB. The e-shifter's PCB has two layers, so it is possible to reconstruct the entire circuit schematic by taking high-resolution photos of the circuit board and tracing the connections between components. To do this, I used GIMP, creating paths and regions to annotate traces and copper fill areas on the circuit board. There are a great number of wonderful tutorials on how to do this, so I won't describe my process here. That said, before this project, I had no experience with GIMP at all, but with help from Claude as a tutor, I gained a basic level of proficiency with it. I started with drawing the outlines of all traces and vias on the image onto a separate layer.
+To start, my first goal was to create an accurate circuit diagram of the PCB. The e-shifter's PCB has two layers, so it is possible to reconstruct the entire circuit schematic by taking high-resolution photos of the circuit board and tracing the connections between components. To do this, I used GIMP, creating paths and regions to annotate traces and copper fill areas on the circuit board. There are a great number of wonderful tutorials on how to do this, so I won't describe my process here. That said, before this project, I had no experience with GIMP at all, but with help from Claude as a tutor, I gained a basic level of proficiency with it. I started with drawing the outlines of all traces and vias on the image onto a separate layer.
 
-(image: front with traces)
-
-(image: back with traces)
+![My PCB trace of the top side of the Van Moof S3 e-shifter.](/images/van-moof/e_shifter_pcb_front.png)
+![My PCB trace of the bottom side of the Van Moof S3 e-shifter.](/images/van-moof/e_shifter_pcb_back.png)
 
 In practice, the images alone are not enough to completely reverse engineer the circuit diagram. A multimeter with continuity mode helps massively to verify whether two components are electrically connected, especially when visibility of the trace is obstructed. In my e-shifter, several traces were routed underneath other components, like underneath the DC-DC driver or the motor driver. I could only confirm those connections with my multimeter.
 
@@ -30,7 +29,7 @@ Alternatively, you can desolder those components from the circuit board using a 
 
 Based on these annotated traces, you can then recreate the full schematic. I created all of the components in KiCad and used my trace map to reconstruct the connections between every pair of components. 
 
-(image: schematic)
+![My schematic for the Van Moof S3 e-shifter.](/images/van-moof/schematic.png)
 
 From there, I tested the various components to see if there were any electrical faults. I powered up the motor (which is a 5V brushless DC motor) from my benchtop power supply, and it moved in both directions without a hitch. In my testing, I identified three components with clear faults. The 0-ohm jumper resistor that powers the DC-DC converter sub-circuit had failed open, as did the 680 mOhm sense resistor used by the motor driver to measure the current draw of the motor. Also, a 100 nF capacitor that is part of one of the Hall effect sensors had failed open. I ordered replacement components and placed the new components on my board.
 
@@ -48,6 +47,8 @@ Conveniently, on the board, there is a footprint where a 6-pin connector could b
 
 After some googling, I found that these pins are part of the Serial Wire Debug (SWD) protocol, which is used with the STM32 family of microcontrollers. To interact with this debug port, I purchased an ST-LINK/V2 debugger and hacked together a very simple circuit board to connect the e-shifter to the debugger while powering it from my power supply. On my first attempt, I misread the ST-LINK debugger pinout and shorted my VCC and ground connections through my debugger, which wasn't great... after fixing that connection, I was able to use `openocd` via the ST-LINK debugger to interact with the microcontroller and dump the firmware to my Macbook (the commands of course generated for me by Claude).
 
+![The debugger attached to the circuit board. Not pictured: the power supply needs to be connected as well to supply power to the microcontroller.](/images/van-moof/debugger.jpeg)
+
 # Part 3: Bootloader analysis
 
 Now that I had the firmware stored locally, I was ready to try my hand at analyzing it. As this is my first time doing any reverse engineering, I first looked around at open-source software used to disassemble, decompile and annotate binaries. After a brief Google search, I decided that Ghidra would be a suitable software suite for this purpose. I loaded the binary and was presented with 32 kilobytes of assembly code and what seemed like obfuscated C code that Ghidra had reconstructed alongside each detected function.
@@ -58,13 +59,12 @@ However, there are many memory addresses referenced from this code outside of ma
 
 Without any annotation, interactions with memory like this simply appear as load or store instructions to various memory locations. To make more sense of the program's behavior, I defined structures corresponding to the memory layout of the relevant memory locations based on their description in the user guide and the MM32F0160 SDK published by MindMotion. After doing this, the decompiled code shows memory access using user-defined names, which makes it much more interpretable.
 
-(images of annotating with memory)
+One of the main challenges I faced in this firmware analysis was simply figuring out what each function was from its assembly code. For this, I made heavy use of Claude Code. Initially, I copied each function's assembly code from Ghidra into Claude and asked it to tell me what function it was and its function signature. This massively sped up the reverse engineering effort. Claude often identified functions from the MM32 SDK purely from the assembly code and provided me with the appropriate signature. This made function calls much more legible in the decompiled view of the function. However, it also renamed argument registers in the assembly code, which was sometimes even more confusing as one register might be used to store multiple values within a function in addition to the function argument itself.
 
-One of the main challenges I faced in this firmware analysis was simply figuring out what each function was from its assembly code. For this, I made heavy use of Claude Code. I copied a function's assembly code from Ghidra into Claude and asked it to tell me what function it was and its function signature. This massively sped up the reverse engineering effort. Claude often identified functions from the MM32 SDK purely from the assembly code and provided me with the appropriate signature. This made function calls much more legible in the decompiled view of the function. However, it also renamed argument registers in the assembly code, which was sometimes even more confusing as one register might be used to store multiple values within a function in addition to the function argument itself.
+![A function detected by Ghidra but not yet annotated.](/images/van-moof/unannotated_assembly.png)
+![The same function but with all memory locations labeled and types assigned.](/images/van-moof/annotated_assembly.png)
 
-(image of before and after function signature)
-
-Ultimately, I was able to work out the behavior of the application. The firmware consists of a bootloader and a main application. The bootloader is responsible for the firmware update process. The application code is stored in a main memory bank `A` at `0x08004800`, and firmware updates are stored in an auxiliary memory bank `B` located at `0x08001800`. Thus, the firmware can be at most `0x3000`, or 12288 in decimal, bytes long. The bootloader only boots the application if bank `A` is valid and bank `B` is not. If bank `B` is valid, it is copied to bank `A` and then erased and invalidated. If the bootloader receives a message on its UART within 250 milliseconds, it will erase and invalidate bank A and enter into a debugging mode to receive a new version of the firmware.
+Ultimately, I was able to deduce the architecture of the e-shifter's firmware. The firmware consists of a bootloader and a main application. The bootloader is responsible for the firmware update process and launching the application itself. The application code is stored in a main memory bank `A` at `0x08004800`, and firmware updates are stored in an auxiliary memory bank `B` located at `0x08001800`. Thus, the firmware can be at most `0x3000`, or 12288 in decimal, bytes long. The bootloader only boots the application if bank `A` is valid and bank `B` is not. If bank `B` is valid, it is copied to bank `A` and then erased and invalidated. If the bootloader receives a message on its UART within 250 milliseconds, it will erase and invalidate bank A and enter into a debugging mode to receive a new version of the firmware.
 
 The approximate pseudocode for the bootloader is:
 ```
@@ -72,9 +72,9 @@ initialize systick handler
 initialize UART1 handler
 enable clock for AHB peripherals
 
-if memory bank A magic header = 0xAA55AA55:
+if memory bank A header = 0xAA55AA55:
     bank_a_crc <- memory bank A cached CRC
-if memory bank B magic header = 0xAA55AA55:
+if memory bank B header = 0xAA55AA55:
     bank_b_crc <- memory bank B cached CRC
     if bank B CRC is valid and bank B CRC != bank A CRC:
         copy bank B to bank A
@@ -93,9 +93,11 @@ else:
     handle UART commands to load firmware to bank B
 ```
 
-One clever thing about the firmware is that it includes its own checksum inside of it. How does it do this? The checksum is a CRC32 checksum, which occupies 4 bytes of memory and is stored at offset 0x8 in the firmware. When computing the checksum of a memory bank, the bootloader first stores the original value of the checksum, sets this memory region to `0xffffffff`, then computes the checksum.
+One interesting thing I noticed is that the bootloader does not clear memory bank B after copying it to bank A. Instead, the chip is reset, and then because bank's A and B are both valid and the CRC checksums match, bank B is then cleared, and the updated application is launched.
 
-I'll explain the UART behavior further below.
+One clever thing about the firmware is that it includes its own checksum inside of it. How does it do this? The checksum is a CRC32 checksum, which occupies 4 bytes of memory and is stored at offset 0x8 in the firmware. When computing the checksum of a memory bank, the bootloader first stores the original value of the checksum, sets this memory region to `0xffffffff`, then computes the checksum. I suppose this is a common approach, but I found it clever.
+
+The UART debugging interface was also interesting to work through. However, it shares much in common with the main application's UART interface, so I've described them together below.
 
 # Part 4: Application analysis
 
@@ -133,7 +135,7 @@ while true:
     drive the e-shifter motor and detect timeouts
     if current time milliseconds < last_loop_iteration_ms:
         last_loop_iteration_ms <- current time milliseconds
-        handle e-shifter state
+        handle last_shifter_state
 ```
 
 The main loop and e-shifter state handler are both written as event loops, and there is no sleep or delay of any kind in the main loop. Instead, control flow will repeatedly progress down the same pathway on each loop iteration. The time in milliseconds is cached when an action is started, and the current time is checked on each iteration of the loop to track how long an operation has taken place (such as the motor running for a certain duration). The e-shifter state handler is only invoked once per millisecond, so it is possible for the e-shifter to communicate with the smart cartridge multiple times before the e-shifter handles its own state.
@@ -150,7 +152,7 @@ The e-shifter state has 7 different values:
 | SystemMode_HomingTimeoutGears23 | 5     | The homing routine timed out between gears 2/3.                                            |
 | SystemMode_Fault                | 6     | The shifter was unable to rehome or complete a shift within the allowed number of retries. |
 
-In general, the e-shifter starts by rehoming itself unless it is sure that it is in first gear. The homing process is fairly straightforward: the e-shifter simply downshifts until the hall 2 sensor is inactive. Once that happens, the motor is stopped, and the e-shifter persists that it is in first gear.
+In general, the e-shifter starts by rehoming itself unless it is sure that it is in first gear. The homing process is fairly straightforward: the e-shifter simply downshifts until the hall 2 sensor is inactive. Once that happens, the motor is stopped, and the e-shifter persists that it is in first gear. There is one subtlety to this: if the homing routine times out before hall sensor 2 reads low but the shifter is in first gear, the shifter enters state `SystemMode_HomingTimeoutGear1` and actually advances the shifter *forward* with a shorter timeout until second gear is entered, thereafter attempting to going back down to first gear.
 
 Under normal circumstances, the e-shifter sets the motor in the appropriate direction and counts the gears passing by Hall effect sensor 1. Once the correct number of gears have passed, the e-shifter leaves the motor running for a few more milliseconds, depending on the gear and direction of shifting. These extra durations are presumably empirically computed based on the geometry of the shifter, position of the magnetic field along the gear ring, the sensitivity of the Hall effect sensor, and potentially backlash in the shifting system.
 
@@ -173,22 +175,22 @@ The e-shifter keeps track of whether shifting or homing failed close by first ge
 
 Both the application and the bootloader support a communication protocol with the smart cartridge. This protocol is based on the Modbus over RS-232, with a frame consisting of a slave address, a command, either 4 or 41 data bytes, and a two byte little-endian CRC16 checksum.
 
-The short message is used for all communication aside from firmware chunk transfers. The interpretation of the 4 data bytes depends on the value of the second byte, which I'll call the *operation*.
+The short message is used for all communication aside from firmware chunk transfers. The interpretation of the 4 data bytes depends on the value of the second byte (index 3 into the frame itself), which I'll call the *operation*.
 
 The bootloader UART loop supports 4 operations:
 
-| Operation | Description                                         |
-| --------- | --------------------------------------------------- |
-| `0x01`    | Echo. Always returns `20 03 02 02`.                 |
-| `0x81`    | Verify memory bank B CRC.                           |
-| `0x82`    | Write a 32-byte chunk of firmware to memory bank B. |
-| `0x95`    | Clear memory bank B.                                |
+| Operation | Command        | Description                                         |
+| --------- | -------------- | --------------------------------------------------- |
+| `0x01`    | `0x3` or `0x6` | Echo. Always returns `20 03 02 02`.                 |
+| `0x81`    | `0x3` or `0x6` | Verify memory bank B CRC.                           |
+| `0x82`    | `0x10`         | Write a 32-byte chunk of firmware to memory bank B. |
+| `0x95`    | `0x3` or `0x6` | Clear memory bank B.                                |
 
 This allows a user to update the e-shifter application firmware via a debugging interface without needing to connect physically to the SWD interface. However, the bootloader itself cannot be modified via this mechanism.
 
 The application UART loop is much more extensive. Several operations appear to read static values that were programmed into the firmware, the meaning of which I'm not able to deduce purely from looking at one version of the firmware itself. These values are stored in address range `0x200000eb`-`0x200000f4`. For simplicity, I'll name this region `FIRMWARE_CONFIG`. These values are statically allocated and are copied as part of the C runtime setup. Some other statistics are persisted in flash directly in the page starting at `0x08007800`, which I call `STATS`. 
 
-Also, for several commands, byte 5 of the request includes a transaction or request ID. This value is included as the first data byte in the response, left shifted by 1 bit. I'll call this `LSRID` for left-shifted request ID. The response always begins with the same first two bytes as the request (i.e. `0x20`, the static client address of the e-shifter, and the specified command byte), so for brevity I omit those from the response description. Likewise, the last two bytes are the little-endian CRC16 checksum of the message.
+Also, for several commands, byte 5 of the request includes a transaction or request ID, which I've abbreviated as `RID`. This value is included as the first data byte in the response, left shifted by 1 bit. I'll call this `LSRID` for left-shifted request ID. The response always begins with the same first two bytes as the request (i.e. `0x20`, the static client address of the e-shifter, and the specified command byte), so for brevity I omit those from the response description. Likewise, the last two bytes are the little-endian CRC16 checksum of the message.
 
 | Operation (request byte 3) | Command | Description                                                         | Request data                                              | Response data                                                                     |
 | -------------------------- | ------- | ------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -212,15 +214,15 @@ Also, for several commands, byte 5 of the request includes a transaction or requ
 
 # Part 6: Retrospective
 
-One thing that makes this analysis quite challenging is that the bootloader and application reuse the same areas of SRAM for different purposes.  For example, address `0x200000c4` holds the UART1 buffer length while the bootloader is active, but later on during the application, this memory address stores a timer which is decremented each time the SYSTICK interrupt fires. The same address can even hold different data types or be aliased in different ways based on this distinction. So I would advise doing analyzing the bootloader and application in separate analysis passes, and when doing so, clear the analyzed bytes of the opposite part so that the automatically added references don't pollute the Ghidra UI.
+**SRAM Reuse.** One thing that makes this analysis quite challenging is that the bootloader and application reuse the same areas of SRAM for different purposes.  For example, address `0x200000c4` holds the UART1 buffer length while the bootloader is active, but later on during the application, this memory address stores a timer which is decremented each time the SYSTICK interrupt fires. The same address can even hold different data types or be aliased in different ways based on this distinction. So I would advise doing analyzing the bootloader and application in separate analysis passes, and when doing so, clear the analyzed bytes of the opposite part so that the automatically added references don't pollute the Ghidra UI.
 
-Interestingly, there were still memory regions from the original firmware that Ghidra did not recognize as instructions, nor were referenced from any code. This amounted to XX bytes of the firmware. I never understood what these regions were used for in the firmware, as they seemed never to be referenced from anywhere.
+**Unidentified memory.** Interestingly, there were still memory regions from the original firmware that Ghidra did not recognize as instructions, nor were referenced from any code. I never understood what these regions were used for in the firmware, as they seemed never to be referenced from anywhere.
 
-I made heavy use of Anthropic's Claude throughout this project, both for guidance on how to use GIMP and Ghidra, as well as helping directly with identifying library functions from the MM32 SDK and understanding the behavior of the custom bootloader and main application. Taking on a project of this scale would have been far beyond my ability without the help of LLM tools. That said, these tools were not perfect, and over time I felt like I was able to analyze the program faster using Claude sparingly (and it was more fun that way too).
+**LLM tools helped tremendously.** I made heavy use of Anthropic's Claude throughout this project, both for guidance on how to use GIMP and Ghidra, as well as helping directly with identifying library functions from the MM32 SDK and understanding the behavior of the custom bootloader and main application. Taking on a project of this scale would have been far beyond my ability without the help of LLM tools. That said, these tools were not perfect, and over time I felt like I was able to analyze the program faster using Claude sparingly (and it was more fun that way too). I did not use any such tools when writing this blog post, however.
 
-I found some aspects of how Ghidra relates disassembled and decompiled code to each other quite confusing. When naming a register-based variable in the decompiled view, Ghidra takes the liberty to rename the corresponding register in the disassembled view of the function. However, the data in registers is frequently moved to other registers. For example, a function argument may need to be moved to another register so that a different argument can be passed to a different function. The result is that the register's annotated name may be correct in some parts of the function and misleading in other parts. This happens presumably because Ghidra doesn't know whether an assignment to the same register represents updating the value of that register or replacing that register's value with an entirely different variable. To address this, you need to use the "Split out as new variable" context menu operation from the decompiler window. This creates a new variable in the decompiler and correctly updates the decompiled and disassembled views, but it is again difficult to see what the underlying register is. To do this, you double click on the reference name, which brings you to the top of the function and out of the context of where you were before. 
+**Ghidra complexity.** I found some aspects of how Ghidra relates disassembled and decompiled code to each other quite confusing. When naming a register-based variable in the decompiled view, Ghidra takes the liberty to rename the corresponding register in the disassembled view of the function. However, the data in registers is frequently moved to other registers. For example, a function argument may need to be moved to another register so that a different argument can be passed to a different function. The result is that the register's annotated name may be correct in some parts of the function and misleading in other parts. This happens presumably because Ghidra doesn't know whether an assignment to the same register represents updating the value of that register or replacing that register's value with an entirely different variable. To address this, you need to use the "Split out as new variable" context menu operation from the decompiler window. This creates a new variable in the decompiler and correctly updates the decompiled and disassembled views, but it is again difficult to see what the underlying register is. To do this, you double click on the reference name, which brings you to the top of the function and out of the context of where you were before. 
 
-Though I was able to analyze dense switch statements from the e-shifter manually, I was not able to successfully decompile these in Ghidra. Such statements have the form:
+**Switch statement analysis.** Though I was able to analyze dense switch statements from the e-shifter manually, I was not able to successfully decompile these in Ghidra. Such statements have the form:
 
 ```
                              Handle state_0fc (switch table is offset based on state value)
@@ -284,8 +286,8 @@ I attempted several mitigations:
 
 Modifying the instruction flow type was the only option that changed the decompiled code, but under no circumstance was the switch statement generated by the decompiler.
 
-One of the fun and tricky parts of reverse engineering is understanding what each piece of memory is being used for.
-
 # Part 7: Conclusion
 
 You might ask me, what was the good of this project? Did I even fix my e-shifter? What do I plan to do with this newfound knowledge about the e-shifter? Honestly, you'd probably be disappointed to hear that this is where I'm stopping with this project. I did fix the e-shifter electrically, but the plastic case was destroyed  I'm not going to build my own bootloader or custom firmware or redesign the e-shifter circuit board or anything like that. However, I feel like I'm now armed with some amazing tools for taking on other projects like this in the future. More importantly, I have more confidence in myself and my ability to take on a substantial project like this. I dealt with many ambiguities and open questions, nor I wasn't following a step-by-step guide. It feels like I leveled up my problem solving skills a notch or two in this project, and I look forward to the next project when I can build on top of these skills again.
+
+(links to resources)

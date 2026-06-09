@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.prose figure {
+  text-align: center;
+}
+
 .prose table {
   display: block;
   overflow-x: auto;

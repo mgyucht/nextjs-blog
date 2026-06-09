@@ -4,6 +4,28 @@ import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
 import remarkGfm from "remark-gfm";
+import { visit } from "unist-util-visit";
+import type { Plugin } from "unified";
+import type { Root } from "mdast";
+
+const remarkFigureCaption: Plugin<[], Root> = () => (tree) => {
+  visit(tree, "paragraph", (node, index, parent) => {
+    if (!parent || index == null) return;
+    const nonWhitespace = node.children.filter(
+      (c) => !(c.type === "text" && (c as any).value.trim() === "")
+    );
+    const images = nonWhitespace.filter((c) => c.type === "image") as any[];
+    if (images.length === 0 || images.length !== nonWhitespace.length) return;
+    const html = images
+      .map((img) =>
+        img.alt
+          ? `<figure><img src="${img.url}" alt="${img.alt}"><figcaption>${img.alt}</figcaption></figure>`
+          : `<figure><img src="${img.url}"></figure>`
+      )
+      .join("\n");
+    (parent.children as any[])[index] = { type: "html", value: html };
+  });
+};
 
 function getPath(relativePath: string): string {
   return path.join(process.cwd(), relativePath);
@@ -17,7 +39,8 @@ export async function getAboutMePage() {
   const matterResult = matter(fileContents);
   const processedContent = await remark()
     .use(remarkGfm)
-    .use(html)
+    .use(remarkFigureCaption)
+    .use(html, { sanitize: false })
     .process(matterResult.content);
   const contentHtml = processedContent.toString();
   return {
@@ -81,7 +104,8 @@ export async function getPostData(id: string) {
   const matterResult = matter(fileContents);
   const processedContent = await remark()
     .use(remarkGfm)
-    .use(html)
+    .use(remarkFigureCaption)
+    .use(html, { sanitize: false })
     .process(matterResult.content);
   const contentHtml = processedContent.toString();
   return {
